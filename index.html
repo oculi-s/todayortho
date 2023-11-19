@@ -3,8 +3,7 @@
 
 <head>
     <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>Pose estimation</title>
 
@@ -33,6 +32,22 @@
             border: 1px solid;
             width: 180px;
             padding: 3px 5px;
+        }
+
+        @media screen and (max-width:768px) {
+            #wrap {
+                display: grid;
+            }
+
+
+            #estimation {
+                width: 100%;
+            }
+
+            #estimation tr>* {
+                width: 50%;
+            }
+
         }
     </style>
 </head>
@@ -139,14 +154,20 @@
         const targetFPS = 5;
         posenet.load().then((model) => {
             video.onloadeddata = predict;
+            if (video.width < screen.width) {
+                canvas.width = canvas.style.width = video.width;
+                canvas.height = canvas.style.height = video.height;
+            } else {
+                video.width = canvas.width = canvas.style.width = screen.width;
+                video.height = canvas.height = canvas.style.height = screen.width * 48 / 64;
+                console.log(canvas.width, canvas.height);
+            }
 
             function predict() {
                 timestamp = Date.now();
                 model.estimateSinglePose(video).then((pose) => {
-                    canvas.width = video.width;
-                    canvas.height = video.height;
                     ctx.save();
-                    ctx.scale(-1, 1); // X 축을 기준으로 좌우 반전
+                    ctx.scale(-1, 1);
                     ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
                     ctx.restore();
                     if (!lastTimestamp || timestamp - lastTimestamp >= 1000 / targetFPS) {
