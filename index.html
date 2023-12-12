@@ -1,8 +1,7 @@
-<!DOCTYPE html>
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8" />
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>Pose estimation</title>
@@ -53,16 +52,21 @@
             width: 480px;
             height: 480px;
             transform: scaleX(-1);
+            display: flex;
+            justify-content: center;
+            overflow: hidden;
         }
 
         #canvas {
-            width: 100%;
-            height: 100%;
+            width: auto;
+            position: absolute;
         }
 
         #video {
+            width: auto;
             position: absolute;
             z-index: -1;
+            object-fit: fill;
         }
     </style>
 </head>
@@ -73,81 +77,83 @@
 
     <div id="wrap">
         <div id="pose">
-            <video id="video" width="480" height="480" autoplay muted playsinline></video>
+            <video id="video" width="480" autoplay muted playsinline></video>
             <canvas id="canvas"></canvas>
         </div>
         <table id="estimation">
-            <tr>
-                <th>0 Nose</th>
-                <td></td>
-            </tr>
-            <tr>
-                <th>1 Left Eye</th>
-                <td></td>
-            </tr>
-            <tr>
-                <th>2 Right Eye</th>
-                <td></td>
-            </tr>
-            <tr>
-                <th>3 Left Ear</th>
-                <td></td>
-            </tr>
-            <tr>
-                <th>4 Right Ear</th>
-                <td></td>
-            </tr>
-            <tr>
-                <th>5 Left Shoulder</th>
-                <td></td>
-            </tr>
-            <tr>
-                <th>6 Right Shoulder</th>
-                <td></td>
-            </tr>
-            <tr>
-                <th>7 Left Elbow</th>
-                <td></td>
-            </tr>
-            <tr>
-                <th>8 Right Elbow</th>
-                <td></td>
-            </tr>
-            <tr>
-                <th>9 Left Wrist</th>
-                <td></td>
-            </tr>
-            <tr>
-                <th>10 Right Wrist</th>
-                <td></td>
-            </tr>
-            <tr>
-                <th>11 Left Hip</th>
-                <td></td>
-            </tr>
-            <tr>
-                <th>12 Right Hip</th>
-                <td></td>
-            </tr>
-            <tr>
-                <th>13 Left Knee</th>
-                <td></td>
-            </tr>
-            <tr>
-                <th>14 Right Knee</th>
-                <td></td>
-            </tr>
-            <tr>
-                <th>15 Left Ankle</th>
-                <td></td>
-            </tr>
-            <tr>
-                <th>16 Right Ankle</th>
-                <td></td>
-            </tr>
+            <tbody>
+                <tr>
+                    <th>0 Nose</th>
+                    <td>(250.2, 237.6)</td>
+                </tr>
+                <tr>
+                    <th>1 Left Eye</th>
+                    <td>(211.7, 190.6)</td>
+                </tr>
+                <tr>
+                    <th>2 Right Eye</th>
+                    <td>(284.7, 192.5)</td>
+                </tr>
+                <tr>
+                    <th>3 Left Ear</th>
+                    <td>(161.3, 207.3)</td>
+                </tr>
+                <tr>
+                    <th>4 Right Ear</th>
+                    <td></td>
+                </tr>
+                <tr>
+                    <th>5 Left Shoulder</th>
+                    <td></td>
+                </tr>
+                <tr>
+                    <th>6 Right Shoulder</th>
+                    <td>(356.8, 417.8)</td>
+                </tr>
+                <tr>
+                    <th>7 Left Elbow</th>
+                    <td></td>
+                </tr>
+                <tr>
+                    <th>8 Right Elbow</th>
+                    <td></td>
+                </tr>
+                <tr>
+                    <th>9 Left Wrist</th>
+                    <td></td>
+                </tr>
+                <tr>
+                    <th>10 Right Wrist</th>
+                    <td></td>
+                </tr>
+                <tr>
+                    <th>11 Left Hip</th>
+                    <td></td>
+                </tr>
+                <tr>
+                    <th>12 Right Hip</th>
+                    <td></td>
+                </tr>
+                <tr>
+                    <th>13 Left Knee</th>
+                    <td></td>
+                </tr>
+                <tr>
+                    <th>14 Right Knee</th>
+                    <td></td>
+                </tr>
+                <tr>
+                    <th>15 Left Ankle</th>
+                    <td></td>
+                </tr>
+                <tr>
+                    <th>16 Right Ankle</th>
+                    <td></td>
+                </tr>
+            </tbody>
         </table>
     </div>
-    <h2 id="message"></h2>
+    <h2 id="message">포즈를 취해주세요.</h2>
     <script>
         const $ = document.querySelector.bind(document);
         const $$ = document.querySelectorAll.bind(document);
@@ -171,18 +177,20 @@
         let lastTimestamp = 0;
         const targetFPS = 5;
         posenet.load().then((model) => {
-            video.onloadeddata = predict;
+            video.addEventListener('loadeddata', function () {
+                predict(this.videoWidth, this.videoHeight);
+            })
 
-            function predict() {
+            function predict(w, h) {
                 timestamp = Date.now();
                 model.estimateSinglePose(video).then((pose) => {
-                    canvas.width = video.width;
-                    canvas.height = video.height;
+                    canvas.width = video.width = w;
+                    canvas.height = video.height = h;
                     drawKeypoints(pose.keypoints, 0.6, ctx);
                     drawSkeleton(pose.keypoints, 0.6, ctx);
                     check_OX(pose);
                 });
-                requestAnimationFrame(predict);
+                requestAnimationFrame(() => predict(w, h));
             }
         });
 
@@ -341,6 +349,8 @@
             ctx.stroke();
         }
     </script>
+
+
 </body>
 
 </html>
