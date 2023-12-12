@@ -12,13 +12,23 @@
     <script
         src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@0.0.6/dist/pose-detection.min.js"></script>
     <style>
+        body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 8px;
+        }
+
         #wrap {
             display: flex;
+            width: 100%;
+            justify-content: center;
         }
 
         #estimation {
             margin: 0 10px;
             text-align: left;
+            width: 300px;
             border-collapse: collapse;
         }
 
@@ -28,29 +38,36 @@
 
         #estimation tr>* {
             border: 1px solid gray;
-            width: 180px;
-            padding: 3px 5px;
+            padding: 3px 8px;
+            width: 50%;
         }
 
         @media screen and (max-width:768px) {
-            #wrap {
-                display: grid;
+            html {
+                font-size: 12px;
             }
 
+            #wrap {
+                display: grid;
+                justify-content: center;
+                margin: auto;
+            }
 
             #estimation {
+                margin: 0;
                 width: 100%;
+                font-size: 1em;
             }
 
             #estimation tr>* {
-                width: 50%;
+                padding: 2px 5px;
             }
-
         }
 
         #pose {
             width: 480px;
             height: 480px;
+            max-width: 100%;
             transform: scaleX(-1);
             display: flex;
             justify-content: center;
@@ -77,7 +94,7 @@
 
     <div id="wrap">
         <div id="pose">
-            <video id="video" width="480" autoplay muted playsinline></video>
+            <video id="video" autoplay muted playsinline></video>
             <canvas id="canvas"></canvas>
         </div>
         <table id="estimation">
@@ -160,6 +177,7 @@
         HTMLElement.prototype.$ = HTMLElement.prototype.querySelector;
         HTMLElement.prototype.$$ = HTMLElement.prototype.querySelectorAll;
 
+        const pose = $("#pose");
         const video = $("#video");
         const canvas = $("#canvas");
         const message = $('#message');
@@ -177,6 +195,7 @@
         let lastTimestamp = 0;
         const targetFPS = 5;
         posenet.load().then((model) => {
+            pose.style.width = Math.min(window.screen.width * .95, 480)
             video.addEventListener('loadeddata', function () {
                 predict(this.videoWidth, this.videoHeight);
             })
