@@ -17,19 +17,18 @@
             display: flex;
         }
 
-        #canvas {
-            width: 640px;
-            height: 480px;
-        }
-
         #estimation {
             margin: 0 10px;
             text-align: left;
             border-collapse: collapse;
         }
 
+        #estimation th {
+            background-color: #b3b3b3;
+        }
+
         #estimation tr>* {
-            border: 1px solid;
+            border: 1px solid gray;
             width: 180px;
             padding: 3px 5px;
         }
@@ -49,6 +48,21 @@
             }
 
         }
+
+        #pose {
+            width: 480px;
+            height: 480px;
+        }
+
+        #canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        #video {
+            position: absolute;
+            z-index: -1;
+        }
     </style>
 </head>
 
@@ -57,7 +71,10 @@
     <p>머리 위로 O를 그리거나 가슴에 X를 그려보세요</p>
 
     <div id="wrap">
-        <canvas id="canvas"></canvas>
+        <div id="pose">
+            <video id="video" width="480" height="480" autoplay muted playsinline></video>
+            <canvas id="canvas"></canvas>
+        </div>
         <table id="estimation">
             <tr>
                 <th>0 Nose</th>
@@ -130,7 +147,6 @@
         </table>
     </div>
     <h2 id="message"></h2>
-    <video id="video" width="640" height="480" autoplay muted playsinline style="visibility: hidden;"></video>
     <script>
         const $ = document.querySelector.bind(document);
         const $$ = document.querySelectorAll.bind(document);
@@ -140,6 +156,7 @@
         const video = $("#video");
         const canvas = $("#canvas");
         const message = $('#message');
+        const estimation = $$('#estimation tr');
         const ctx = canvas.getContext("2d");
 
         let pose_status = 2;
@@ -154,26 +171,12 @@
         const targetFPS = 5;
         posenet.load().then((model) => {
             video.onloadeddata = predict;
-            if (video.width < screen.width) {
-                canvas.width = canvas.style.width = video.width;
-                canvas.height = canvas.style.height = video.height;
-            } else {
-                video.width = canvas.width = canvas.style.width = screen.width;
-                video.height = canvas.height = canvas.style.height = screen.width * 48 / 64;
-                console.log(canvas.width, canvas.height);
-            }
 
             function predict() {
                 timestamp = Date.now();
                 model.estimateSinglePose(video).then((pose) => {
-                    ctx.save();
-                    ctx.scale(-1, 1);
-                    ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
-                    ctx.restore();
-                    if (!lastTimestamp || timestamp - lastTimestamp >= 1000 / targetFPS) {
-                        lastTimestamp = timestamp;
-                        setKeypoints(pose.keypoints, 0.6, ctx);
-                    }
+                    canvas.width = video.width;
+                    canvas.height = video.height;
                     drawKeypoints(pose.keypoints, 0.6, ctx);
                     drawSkeleton(pose.keypoints, 0.6, ctx);
                     check_OX(pose);
@@ -198,6 +201,7 @@
             }
         }, 1000);
 
+        /* 자세 검출 함수들 */
         function check_OX(pose) {
             if (!check_O(pose) && !check_X(pose)) {
                 pose_status = 2;
@@ -303,32 +307,14 @@
             ctx.stroke();
         }
 
-        function drawKeypoints(keypoints, minConfidence, ctx, scale = 1) {
-            for (let i = 0; i < keypoints.length; i++) {
-                const keypoint = keypoints[i];
-                if (keypoint.score < minConfidence) {
-                    continue;
-                }
-                const { y, x } = keypoint.position;
-                const flippedX = canvas.width - x;
-                drawPoint(ctx, y * scale, flippedX * scale, 3, color);
-            }
-        }
-
         function drawSkeleton(keypoints, minConfidence, ctx, scale = 1) {
             const adjacentKeyPoints = posenet.getAdjacentKeyPoints(keypoints, minConfidence);
             adjacentKeyPoints.forEach((keypoints) => {
-                const [ay, ax] = toTuple(keypoints[0].position);
-                const [by, bx] = toTuple(keypoints[1].position);
-                const flippedAx = canvas.width - ax;
-                const flippedBx = canvas.width - bx;
-                drawSegment([ay, flippedAx], [by, flippedBx], color, scale, ctx);
+                drawSegment(toTuple(keypoints[0].position), toTuple(keypoints[1].position), color, scale, ctx);
             });
         }
 
-
-        const estimation = $$('#estimation tr');
-        function setKeypoints(keypoints, minConfidence, ctx, scale = 1) {
+        function drawKeypoints(keypoints, minConfidence, ctx, scale = 1) {
             for (let i = 0; i < keypoints.length; i++) {
                 const keypoint = keypoints[i];
                 estimation[i].$('td').innerHTML = '';
@@ -338,8 +324,10 @@
                 const { y, x } = keypoint.position;
                 const flippedX = canvas.width - x;
                 estimation[i].$('td').innerHTML = `(${flippedX.toFixed(1)}, ${y.toFixed(1)})`
+                drawPoint(ctx, y * scale, x * scale, 3, color);
             }
         }
+
         function drawBoundingBox(keypoints, ctx) {
             const boundingBox = posenet.getBoundingBox(keypoints);
             ctx.rect(
